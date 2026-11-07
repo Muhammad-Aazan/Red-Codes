@@ -150,7 +150,7 @@ export class DatabaseService {
       INSERT OR IGNORE INTO settings (key, value) VALUES ('onboarding_completed', 'false');
     `)
 
-    // Auto-discover common dev apps & browsers if installed
+    // Auto-discover common dev apps & browsers if installed (without duplicates)
     try {
       const localAppData = process.env.LOCALAPPDATA || 'C:\\Users\\progr\\AppData\\Local'
       const commonApps = [
@@ -163,11 +163,17 @@ export class DatabaseService {
       ]
       for (const ca of commonApps) {
         if (existsSync(ca.path)) {
-          this.db.run(
-            `INSERT OR IGNORE INTO applications (id, name, executable, category, is_private, sort_order)
-             VALUES (?, ?, ?, ?, 0, 0)`,
-            [`app_${ca.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`, ca.name, ca.path, ca.cat]
-          )
+          const checkStmt = this.db.prepare('SELECT id FROM applications WHERE executable = ? OR name = ?')
+          checkStmt.bind([ca.path, ca.name])
+          const exists = checkStmt.step()
+          checkStmt.free()
+          if (!exists) {
+            this.db.run(
+              `INSERT INTO applications (id, name, executable, category, is_private, sort_order)
+               VALUES (?, ?, ?, ?, 0, 0)`,
+              [`app_${ca.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`, ca.name, ca.path, ca.cat]
+            )
+          }
         }
       }
     } catch (e) {

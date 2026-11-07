@@ -265,15 +265,7 @@ function setupIPC() {
     try {
       const auth = await getAuth()
       const res = await auth.setupPin(pin)
-      if (res.success) {
-        isVaultUnlocked = true
-        sessionPin = pin
-        if (unlockWindow) {
-          unlockWindow.close()
-          unlockWindow = null
-        }
-        createVaultWindow()
-      }
+      // Keep vault locked on setup so the user enters the normal launcher first
       return res
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -372,9 +364,36 @@ function setupIPC() {
   ipcMain.handle('apps-get-all', async (_event, isPrivate: boolean = false) => {
     try {
       const db = await getDB()
-      return db.getApps(isPrivate)
+      const apps = db.getApps(isPrivate)
+      // Extract real Windows native icons for all installed executables
+      const appsWithIcons = await Promise.all(
+        apps.map(async (a) => {
+          try {
+            if (a.executable && existsSync(a.executable)) {
+              const nativeIcon = await app.getFileIcon(a.executable, { size: 'large' })
+              return { ...a, icon: nativeIcon.toDataURL() }
+            }
+          } catch (err) {
+            // Keep default icon fallback
+          }
+          return a
+        })
+      )
+      return appsWithIcons
     } catch (err: any) {
       return []
+    }
+  })
+
+  ipcMain.handle('app-get-icon', async (_event, execPath: string) => {
+    try {
+      if (execPath && existsSync(execPath)) {
+        const nativeIcon = await app.getFileIcon(execPath, { size: 'large' })
+        return nativeIcon.toDataURL()
+      }
+      return null
+    } catch {
+      return null
     }
   })
 

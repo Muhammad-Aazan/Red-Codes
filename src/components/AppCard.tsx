@@ -58,7 +58,7 @@ export default function AppCard({ app, onLaunch, onDelete }: AppCardProps) {
       {/* Icon with hover launch play button */}
       <div className="relative w-14 h-14 rounded-xl bg-bg-secondary border border-border-subtle flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-200">
         {app.icon ? (
-          <img src={app.icon} alt={app.name} className="w-10 h-10 object-contain" />
+          <img src={app.icon} alt={app.name} className="w-10 h-10 object-contain drop-shadow-md select-none" draggable={false} />
         ) : (
           <DefaultAppIcon name={app.name} />
         )}
