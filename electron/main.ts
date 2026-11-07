@@ -630,17 +630,6 @@ function setupIPC() {
     const wasRegistered = globalShortcut.isRegistered(shortcut)
     return { conflict: wasRegistered }
   })
-
-  // Icon extraction
-  ipcMain.handle('app-get-icon', async (_event, execPath: string) => {
-    try {
-      const cleanPath = execPath.trim().replace(/^["']|["']$/g, '').trim()
-      const icon = await app.getFileIcon(cleanPath, { size: 'large' })
-      return icon.toDataURL()
-    } catch {
-      return null
-    }
-  })
 }
 
 app.whenReady().then(async () => {
